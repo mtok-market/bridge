@@ -1,0 +1,36 @@
+{
+  "name": "mtok-bridge",
+  "version": "0.1.0",
+  "description": "Serve any model as an OpenAI-compatible API with a key. No payment, no market, runs anywhere node runs. The transport core behind mtok.market's seller relay.",
+  "type": "module",
+  "bin": {
+    "mtok-bridge": "mtok-bridge.mjs"
+  },
+  "exports": {
+    ".": "./src/bridge.mjs"
+  },
+  "files": [
+    "mtok-bridge.mjs",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "llm",
+    "openai-compatible",
+    "proxy",
+    "bridge",
+    "mtok"
+  ],
+  "license": "MIT",
+  "homepage": "https://mtok.market",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mtok-market/bridge.git"
+  }
+}

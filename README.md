@@ -1,0 +1,43 @@
+# mtok-bridge
+
+Serve any model as an OpenAI-compatible API, gated by a key. No payment, no market, no account,
+nothing reported anywhere. Runs anywhere node runs.
+
+```
+npx mtok-bridge --upstream https://api.openai.com/v1 --upstream-key sk-... --model gpt-4o-mini
+npx mtok-bridge --upstream http://localhost:11434/v1 --model llama3.2      # a local ollama server
+```
+
+It prints an endpoint and an api key. Hand them to whoever should use it:
+
+```
+curl http://localhost:8790/v1/chat/completions \
+  -H "authorization: Bearer <the-printed-key>" \
+  -H "content-type: application/json" \
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'
+```
+
+## flags
+
+- `--upstream <url>` (required): any OpenAI-compatible chat/completions root (a provider, or your
+  own model server: ollama, LM Studio, vLLM, etc).
+- `--upstream-key <key>`: the upstream's bearer token, if it needs one.
+- `--model <id>`: a model you serve (repeatable, or a comma list). Omit to pass the upstream's
+  default through.
+- `--port <n>`: default 8790.
+- `--api-key <key>`: the key clients send. Omit and one is generated + printed for you.
+- `--keyless`: serve with NO key (anyone who can reach the endpoint can use it). Opt-in.
+
+## want to get paid for it?
+
+The bridge is the transport half of [mtok.market](https://mtok.market)'s seller relay. When you
+want to get PAID for a model (on-chain, per call, in USDC on Base) and be discovered on the market
+board instead of handing out keys, the market relay wraps this exact bridge with settlement. Same
+tool, one layer on top.
+
+
+---
+
+Read-only public mirror. The source of truth is the private mtok.market
+monorepo; this repo is synced automatically. Do not open pull requests here.
+Home: https://mtok.market
