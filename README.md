@@ -35,6 +35,16 @@ want to get PAID for a model (on-chain, per call, in USDC on Base) and be discov
 board instead of handing out keys, the market relay wraps this exact bridge with settlement. Same
 tool, one layer on top.
 
+## the shared serve core (for market hosts)
+
+`mtok-bridge` also exports `createServeCore`, the paid-serve state machine the market relay
+(and the workers-ai house seller) run: validate request => verify the on-chain DrawPaid
+(request-hash bound) => bound both legs against the payment => claim => upstream => complete,
+fail-closed. The redemption store is a pluggable interface (`{ state, get, claim, complete,
+retentionMs }`, each method sync or async: the core awaits every call), so a filesystem store and a Workers KV store drive the same code path. If you
+are just serving a model for a key, you never need it; it is here so every mtok seller host
+shares one money path.
+
 
 ---
 
