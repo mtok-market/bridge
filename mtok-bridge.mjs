@@ -36,11 +36,26 @@ if (!o.upstream) { console.error('need --upstream <openai-compatible url> (e.g. 
 const apiKey = o.keyless ? null : (o.apiKey || 'mtok_' + crypto.randomBytes(24).toString('hex'));
 const upstream = httpUpstream({ baseUrl: o.upstream, key: o.upstreamKey });
 
+const MAX_BODY_BYTES = 2_000_000;
 const readBody = (req) => new Promise((resolve) => {
-  let data = ''; let over = false;
-  req.on('data', (c) => { data += c; if (data.length > 2_000_000) { over = true; req.destroy(); } });
-  req.on('end', () => resolve(over ? null : data));
-  req.on('error', () => resolve(null));
+  // #651: buffer the raw chunks and decode ONCE. `data += chunk` stringified each
+  // Buffer as it arrived, which corrupts a multibyte UTF-8 character split across
+  // two TCP chunks (each half decodes to replacement bytes). Track the BYTE total
+  // (not string .length) against the cap, and on overflow resolve immediately so an
+  // oversized request gets its 413 instead of leaving the handler awaiting forever.
+  const chunks = [];
+  let bytes = 0;
+  let settled = false;
+  const done = (value) => { if (!settled) { settled = true; resolve(value); } };
+  req.on('data', (c) => {
+    if (settled) return;
+    bytes += c.length;
+    if (bytes > MAX_BODY_BYTES) { req.destroy(); return done(null); }
+    chunks.push(c);
+  });
+  req.on('end', () => done(Buffer.concat(chunks).toString('utf8')));
+  req.on('error', () => done(null));
+  req.on('close', () => done(null)); // destroy() emits close, not always end/error
 });
 const send = (res, status, json) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(json)); };
 
