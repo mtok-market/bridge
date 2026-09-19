@@ -41,9 +41,17 @@ tool, one layer on top.
 (and the workers-ai house seller) run: validate request => verify the on-chain DrawPaid
 (request-hash bound) => bound both legs against the payment => claim => upstream => complete,
 fail-closed. The redemption store is a pluggable interface (`{ state, get, claim, complete,
-retentionMs }`, each method sync or async: the core awaits every call), so a filesystem store and a Workers KV store drive the same code path. If you
+retentionMs }`, each method sync or async: the core awaits every call). The store must make
+claims atomic across every host serving that offer. Independent local files and eventually
+consistent KV read/write pairs do not provide that guarantee. If you
 are just serving a model for a key, you never need it; it is here so every mtok seller host
 shares one money path.
+
+`state(key, { claimKey })` and `get(key, { claimKey })` receive the canonical commitment
+identity even when `key` names a legacy record. `claim(key, markerKey, { paidAtMs })` receives
+the verifier's payment timestamp, so a store migrating old claims can refuse ambiguous
+pre-cutover payments. Existing stores may ignore these additional arguments. The core still
+verifies the payment before reading a completion, and known claims never run upstream again.
 
 
 ---
