@@ -53,8 +53,11 @@ the verifier's payment timestamp, so a store migrating old claims can refuse amb
 pre-cutover payments. Existing stores may ignore these additional arguments. The core still
 verifies the payment before reading a completion, and known claims never run upstream again.
 
-The counted-input change is not ready to publish. The reference HTTP relay and SDK
-quote flow are integrated; the house seller's provider counters and rollout are still pending.
+Set `replayOnly: true` when retiring a payment domain. The core still verifies the
+payment before replaying a saved completion or returning its pending status. An
+unrecorded payment returns 503 before fee evaluation, input counting, claiming or
+inference. Quotes also return 503. Keep the legacy payment verifier and store
+available for these retries; this mode never admits new paid work.
 
 The new core requires `countInputTokens(safeRequest)`, returning a nonnegative safe integer
 or a promise for one. The host must count its actual provider prompt, including its chat
