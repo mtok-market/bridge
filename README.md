@@ -53,6 +53,35 @@ the verifier's payment timestamp, so a store migrating old claims can refuse amb
 pre-cutover payments. Existing stores may ignore these additional arguments. The core still
 verifies the payment before reading a completion, and known claims never run upstream again.
 
+The counted-input change is not ready to publish. The reference HTTP relay and SDK
+quote flow are integrated; the house seller's provider counters and rollout are still pending.
+
+The new core requires `countInputTokens(safeRequest)`, returning a nonnegative safe integer
+or a promise for one. The host must count its actual provider prompt, including its chat
+template and special tokens. A missing, failed or invalid counter returns 503 before claiming
+a fresh draw. Completed and pending retries retain their existing outcomes without counting
+again. The old byte-estimate export is retained for compatibility; neither the core nor
+the current SDK uses it to authorize spending.
+
+`core.quote(request)` validates the same request and returns `{ status, body }` with
+`model`, `offerId`, `inputTokens`, `maxInputTokens`, `maxOutputTokens`, and the decimal-string
+prices `inputPricePerMTokAtomic` / `outputPricePerMTokAtomic`. It performs no payment
+verification, claim or inference. Expose it at `POST /quote` with `{ request }` under the
+same request-size, concurrency and rate limits as `/chunk`. The paid path recounts before
+claiming; a quote does not override payment verification or lock provider configuration.
+
+For a vLLM-compatible provider, `httpInputCounter({ url, key })` calls its native `/tokenize`
+chat endpoint with the same model and messages, `add_generation_prompt:true`, and
+`add_special_tokens:false`. The provider must render exactly the chat template used by
+inference. Unsupported providers need their own counter; there is no character-estimate
+fallback. The tokenization request has a five-second deadline and a bounded response body.
+
+`maxInputTokens` sets the hard input ceiling (default 131072). `maxOutputTokens` retains its
+32768 default. `boundServe` now takes `inputTokens`, `budgetUsdAtomic`, `inPriceAtomic` and
+`outPriceAtomic`. Prices are atomic USD per million tokens. It reserves input in integer
+arithmetic and funds output only from the remainder. The core uses the higher of the host's
+price and the verified payment's committed price for each leg.
+
 
 ---
 
